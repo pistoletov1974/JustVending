@@ -1,0 +1,11 @@
+#ifndef _CCTALK_H__
+#define _CCTALK_H__
+
+ void polling(void);
+ 
+ const unsigned char  cmdE5[] ={0x02,0x00,0x01,0xe5,0x18};
+  const unsigned char  cmdFE[] ={0x02,0x00,0x01,0xFE,0xFF};
+ const unsigned char  cmd01[] ={0x02,0x00,0x01,0x01,0xFC}; 
+  
+#endif /* _CCTALK_H__*/
+ 

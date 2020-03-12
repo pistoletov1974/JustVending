@@ -1,0 +1,6 @@
+w -gnd
+x- rx
+y- gnd
+z - 3v3 
+a - tx
+
