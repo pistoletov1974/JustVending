@@ -28,6 +28,7 @@
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
+#include "math.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -100,16 +101,21 @@ int main(void)
     extern DMA_HandleTypeDef hdma_usart1_rx;
     extern DMA_HandleTypeDef hdma_spi1_tx;
     extern DMA_HandleTypeDef hdma_spi2_rx;
+    extern DMA_HandleTypeDef hdma_spi3_tx;
     uint8_t income[256];
+    uint16_t syne_wave[512];
+    uint16_t  *ptr = syne_wave;
+    uint16_t syne;
     uint32_t crc;
     uint8_t  crc_cctalk;
     uint8_t devid_cmd[1] = { 0x9F };
-    uint8_t flash_read_cmd[5];
-    flash_read_cmd[0]=0x03;
+    uint8_t flash_read_cmd[4];
+    flash_read_cmd[0]=0x0b;
     flash_read_cmd[1]=0;
     flash_read_cmd[2]=0;
     flash_read_cmd[3]=0;
-    flash_read_cmd[4]=0;
+    const float  pi = 3.1415927;
+ 
   /* USER CODE END 1 */
   
 
@@ -152,15 +158,41 @@ int main(void)
    HAL_SPI_Receive(&hspi2,income,5,500);
    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
    HAL_Delay(10);
+   
+   //-------------------------------------------------------------
+       for (int i=0;i<512/2;i++) {
+       
+           syne = sin(  (2*pi / 256 ) *i ) * 30000;
+           *ptr++= syne;
+           *ptr++ = syne;           
+       
+       
+       }
+   
+   
+   //-------------------------------------------------------------
+   
+   
    //read first 256 bytes from flash
-   HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_RESET);
-   HAL_SPI_Transmit_DMA(&hspi2, flash_read_cmd,sizeof(flash_read_cmd));
-   HAL_SPI_Receive_DMA(&hspi2,income,256);
-   while(hdma_spi2_rx.State != HAL_DMA_STATE_READY);
-  // HAL_Delay(10);
-   HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
-   HAL_Delay(10);
-   HAL_I2S_Transmit_DMA(&hi2s3,(uint16_t *)income,sizeof(income));
+  // for (int j=0; j<6; j++) {
+   for (int i=0; i<256;i++) {
+ //  flash_read_cmd[2]=i;    
+ //   flash_read_cmd[3]=j;    
+ //  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_RESET);
+ //  HAL_SPI_Transmit(&hspi2, flash_read_cmd,sizeof(flash_read_cmd)+1,1000);
+  // while(hdma_spi2_rx.State != HAL_DMA_STATE_READY);
+//   HAL_Delay(1);
+//   HAL_SPI_Receive_DMA(&hspi2,income,sizeof(income));
+//   while(hdma_spi2_rx.State != HAL_DMA_STATE_READY);
+ 
+   //HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
+  
+   
+   HAL_I2S_Transmit_DMA(&hi2s3,syne_wave,sizeof(syne_wave)/2);
+   while (hdma_spi3_tx.State !=HAL_DMA_STATE_READY);
+   //HAL_Delay(1);    
+   }
+ //   }
    HAL_Delay(10);
    
    

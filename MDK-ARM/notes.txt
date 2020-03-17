@@ -4,3 +4,12 @@ y- gnd
 z - 3v3 
 a - tx
 
+
+
+
+I2S   (I2S3)
+LRC (WS)  - PA4
+BCLK (CK) - PC10
+DIN (SD)  - PC12
+
+
