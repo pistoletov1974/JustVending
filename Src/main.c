@@ -102,10 +102,11 @@ int main(void)
     extern DMA_HandleTypeDef hdma_spi1_tx;
     extern DMA_HandleTypeDef hdma_spi2_rx;
     extern DMA_HandleTypeDef hdma_spi3_tx;
-    uint8_t income[256];
-    uint16_t syne_wave[512];
-    uint16_t  *ptr = syne_wave;
-    uint16_t syne;
+    uint8_t income[512];
+  //  uint8_t income[256];
+    //uint16_t syne_wave[512];
+ //   uint16_t  *ptr = syne_wave;
+    uint16_t syne,index;
     uint32_t crc;
     uint8_t  crc_cctalk;
     uint8_t devid_cmd[1] = { 0x9F };
@@ -158,7 +159,7 @@ int main(void)
    HAL_SPI_Receive(&hspi2,income,5,500);
    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
    HAL_Delay(10);
-   
+   /*
    //-------------------------------------------------------------
        for (int i=0;i<512/2;i++) {
        
@@ -171,25 +172,28 @@ int main(void)
    
    
    //-------------------------------------------------------------
-   
-   
+     */
+  index=0;
 //   read first 256 bytes from flash
-   for (int j=0; j<6; j++) {
-   for (int i=0; i<256;i++) {
+   for (int j=0; j<0x3a; j++) {
+
+   for (int i=0; i<256;i+=2) {
    flash_read_cmd[2]=i;    
-    flash_read_cmd[3]=j;    
+    flash_read_cmd[1]=j;    
+   
    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_RESET);
    HAL_SPI_Transmit_DMA(&hspi2, flash_read_cmd,sizeof(flash_read_cmd)+1);
    while(hdma_spi2_rx.State != HAL_DMA_STATE_READY);
 
-   HAL_SPI_Receive_DMA(&hspi2,income,sizeof(income));
+   HAL_SPI_Receive_DMA(&hspi2,income,512);
    while(hdma_spi2_rx.State != HAL_DMA_STATE_READY);
  
    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
   
    
-   HAL_I2S_Transmit_DMA(&hi2s3,(uint16_t *) &income[0],sizeof(income)/2);
+   HAL_I2S_Transmit(&hi2s3,(uint16_t *) &income[0],sizeof(income)/2,10000);
    while (hdma_spi3_tx.State !=HAL_DMA_STATE_READY);
+       
    //HAL_Delay(1);    
    }
     }
