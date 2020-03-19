@@ -42,7 +42,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
+   extern  volatile uint8_t dma_half_complete;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -377,6 +377,11 @@ void DMA2_Stream7_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s) 
+{
+
+     dma_half_complete=1;
+}
 
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -76,6 +76,7 @@ void SystemClock_Config(void);
 struct __FILE { int handle; /* Add whatever you need here */ };
 FILE __stdout;
 FILE __stdin;
+volatile uint8_t dma_half_complete=0;
 
 int fputc(int ch, FILE *f) {
       if (DEMCR & TRCENA)
@@ -116,6 +117,7 @@ int main(void)
     flash_read_cmd[2]=0;
     flash_read_cmd[3]=0;
     const float  pi = 3.1415927;
+  
  
   /* USER CODE END 1 */
   
@@ -190,9 +192,13 @@ int main(void)
  
    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
   
+   dma_half_complete = 0;
+   HAL_I2S_Transmit_DMA(&hi2s3,(uint16_t *) &income[0],sizeof(income)/2);
+  // while (hdma_spi3_tx.State !=HAL_DMA_STATE_READY);
+   while (dma_half_complete == 0);
+
    
-   HAL_I2S_Transmit(&hi2s3,(uint16_t *) &income[0],sizeof(income)/2,10000);
-   while (hdma_spi3_tx.State !=HAL_DMA_STATE_READY);
+       
        
    //HAL_Delay(1);    
    }
