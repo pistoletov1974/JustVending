@@ -28,12 +28,12 @@
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
-#include "math.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "cctalk.h"
 #include "stdio.h"
+#include "math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -76,7 +76,8 @@ void SystemClock_Config(void);
 struct __FILE { int handle; /* Add whatever you need here */ };
 FILE __stdout;
 FILE __stdin;
-volatile uint8_t dma_half_complete=0;
+volatile uint8_t dma_i2s_half_complete=0;
+volatile uint8_t dma_spi_complete;
 
 int fputc(int ch, FILE *f) {
       if (DEMCR & TRCENA)
@@ -117,6 +118,8 @@ int main(void)
     flash_read_cmd[2]=0;
     flash_read_cmd[3]=0;
     const float  pi = 3.1415927;
+    uint32_t flash_addr=0;
+    uint32_t audio_size=0x3E3C0;
   
  
   /* USER CODE END 1 */
@@ -175,34 +178,49 @@ int main(void)
    
    //-------------------------------------------------------------
      */
-  index=0;
-//   read first 256 bytes from flash
-   for (int j=0; j<0x3a; j++) {
+  //load first 512 byte into buffer
 
-   for (int i=0; i<256;i+=2) {
-   flash_read_cmd[2]=i;    
-    flash_read_cmd[1]=j;    
+
+  
+  
+   while (  flash_addr<audio_size) {
+  
+    
+    flash_read_cmd[2]=(uint8_t) (flash_addr>>8);  //medium  
+    flash_read_cmd[1]=(uint8_t) (flash_addr>>16); //high  
    
+     // command flash structure  0x0B  J(HIGH)  I(MED)  0(LOW)       
    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_RESET);
    HAL_SPI_Transmit_DMA(&hspi2, flash_read_cmd,sizeof(flash_read_cmd)+1);
    while(hdma_spi2_rx.State != HAL_DMA_STATE_READY);
-
-   HAL_SPI_Receive_DMA(&hspi2,income,512);
+   HAL_SPI_Receive_DMA(&hspi2,&income[0],256);
    while(hdma_spi2_rx.State != HAL_DMA_STATE_READY);
- 
    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
-  
-   dma_half_complete = 0;
-   HAL_I2S_Transmit_DMA(&hi2s3,(uint16_t *) &income[0],sizeof(income)/2);
-  // while (hdma_spi3_tx.State !=HAL_DMA_STATE_READY);
-   while (dma_half_complete == 0);
-
+   flash_addr+=256;    
    
+   while(hdma_spi3_tx.State !=HAL_DMA_STATE_READY);
        
+   HAL_I2S_Transmit_DMA(&hi2s3,(uint16_t *) &income[0],sizeof(income)/2);    
+   
+   while(dma_i2s_half_complete ==0);
+
+    flash_read_cmd[2]=(uint8_t) (flash_addr>>8);  //medium  
+    flash_read_cmd[1]=(uint8_t) (flash_addr>>16); //high  
+   
+     // command flash structure  0x0B  J(HIGH)  I(MED)  0(LOW)       
+   HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_RESET);
+   HAL_SPI_Transmit_DMA(&hspi2, flash_read_cmd,sizeof(flash_read_cmd)+1);
+   while(hdma_spi2_rx.State != HAL_DMA_STATE_READY);
+   HAL_SPI_Receive_DMA(&hspi2,&income[256],256);
+   while(hdma_spi2_rx.State != HAL_DMA_STATE_READY);
+   HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
+   flash_addr+=256;     
+         
+       
+                            
        
    //HAL_Delay(1);    
-   }
-    }
+  } //while
    HAL_Delay(10);
    
    
@@ -263,7 +281,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 8;
   RCC_OscInitStruct.PLL.PLLN = 192;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV6;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -276,9 +294,9 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
   {
     Error_Handler();
   }
