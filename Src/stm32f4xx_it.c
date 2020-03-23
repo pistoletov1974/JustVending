@@ -43,6 +43,7 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
    extern  volatile uint8_t dma_i2s_half_complete;
+   extern  volatile uint8_t dma_i2s_complete;
    extern  volatile uint8_t dma_spi_complete;
 /* USER CODE END PV */
 
@@ -383,6 +384,13 @@ void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 
      dma_i2s_half_complete=1;
 }
+
+void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s) 
+{
+
+     dma_i2s_complete=1;
+}
+
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 

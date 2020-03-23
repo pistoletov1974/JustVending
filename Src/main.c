@@ -78,6 +78,7 @@ FILE __stdout;
 FILE __stdin;
 volatile uint8_t dma_i2s_half_complete=0;
 volatile uint8_t dma_spi_complete;
+volatile uint8_t dma_i2s_complete;
 
 int fputc(int ch, FILE *f) {
       if (DEMCR & TRCENA)
@@ -184,24 +185,27 @@ int main(void)
   
   
    while (  flash_addr<audio_size) {
-  
-    
+    dma_i2s_complete=0;
+    dma_i2s_half_complete=0;   
+    while(hdma_spi3_tx.State !=HAL_DMA_STATE_READY);   
+    HAL_I2S_Transmit_DMA(&hi2s3,(uint16_t *)income,sizeof(income)/2);  
     flash_read_cmd[2]=(uint8_t) (flash_addr>>8);  //medium  
     flash_read_cmd[1]=(uint8_t) (flash_addr>>16); //high  
    
      // command flash structure  0x0B  J(HIGH)  I(MED)  0(LOW)       
-   HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_RESET);
    
+   HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_RESET);
    HAL_SPI_Transmit_DMA(&hspi2, flash_read_cmd,sizeof(flash_read_cmd)+1);
    while(hdma_spi2_rx.State != HAL_DMA_STATE_READY);
-   HAL_SPI_Receive_DMA(&hspi2,&income[0],256);
+   
+   HAL_SPI_Receive_DMA(&hspi2,&income[256],256);
    while(hdma_spi2_rx.State != HAL_DMA_STATE_READY);
    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
    flash_addr+=256;    
    
-   while(hdma_spi3_tx.State !=HAL_DMA_STATE_READY);
+   
        
-   HAL_I2S_Transmit_DMA(&hi2s3,(uint16_t *)income,sizeof(income)/2);    
+    
    
    while(dma_i2s_half_complete ==0);
 
@@ -213,10 +217,14 @@ int main(void)
  
    HAL_SPI_Transmit_DMA(&hspi2, flash_read_cmd,sizeof(flash_read_cmd)+1);
    while(hdma_spi2_rx.State != HAL_DMA_STATE_READY);
-   HAL_SPI_Receive_DMA(&hspi2,&income[256],256);
+   HAL_SPI_Receive_DMA(&hspi2,&income[0],256);
    while(hdma_spi2_rx.State != HAL_DMA_STATE_READY);
    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
-   flash_addr+=256;     
+   flash_addr+=256;   
+   
+   while(dma_i2s_complete ==0);   
+  
+   
    
   } //while
    HAL_Delay(10);
