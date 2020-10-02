@@ -20,6 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "adc.h"
 #include "dma.h"
 #include "i2s.h"
@@ -59,6 +60,7 @@
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -106,10 +108,7 @@ int main(void)
     extern DMA_HandleTypeDef hdma_spi2_rx;
     extern DMA_HandleTypeDef hdma_spi3_tx;
     uint8_t income[512];
-  //  uint8_t income[256];
-    //uint16_t syne_wave[512];
- //   uint16_t  *ptr = syne_wave;
-    uint16_t syne,index;
+
     uint32_t crc;
     uint8_t  crc_cctalk;
     uint8_t devid_cmd[1] = { 0x9F };
@@ -118,7 +117,7 @@ int main(void)
     flash_read_cmd[1]=0;
     flash_read_cmd[2]=0;
     flash_read_cmd[3]=0;
-    const float  pi = 3.1415927;
+ 
     uint32_t flash_addr=0;
     uint32_t audio_size=0x3E3C0;
   
@@ -165,21 +164,7 @@ int main(void)
    HAL_SPI_Receive(&hspi2,income,5,500);
    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
    HAL_Delay(10);
-   /*
-   //-------------------------------------------------------------
-       for (int i=0;i<512/2;i++) {
-       
-           syne = sin(  (2*pi / 256 ) *i ) * 30000;
-           *ptr++= syne;
-           *ptr++ = syne;           
-       
-       
-       }
-   
-   
-   //-------------------------------------------------------------
-     */
-  //load first 512 byte into buffer
+
 
 
   
@@ -234,6 +219,14 @@ int main(void)
    
    
   /* USER CODE END 2 */
+
+  /* Call init function for freertos objects (in freertos.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
+  
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -319,6 +312,27 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM3 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM3) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
